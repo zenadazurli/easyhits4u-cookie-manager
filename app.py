@@ -5,13 +5,17 @@ from browser_use_sdk.v3 import AsyncBrowserUse
 from playwright.async_api import async_playwright
 from datetime import datetime
 
-API_KEY = os.environ.get("BROWSER_USE_API_KEY", "bu_jGikZymCNda8f1KLkBiFThn_axFR-DIjwzn6ohcoByY")
+# NUOVA API KEY
+API_KEY = os.environ.get("BROWSER_USE_API_KEY", "bu_p13_SIvj0Y2JtzsA7fyZZ72xwlmmNMixXMyYft1ZA5s")
 
+# Credenziali EasyHits4U
 EMAIL = "sandrominori50+ulugarecexisa@gmail.com"
 PASSWORD = "DDnmVV45!!"
 
 async def wait_for_turnstile_token(page, timeout=60):
+    """Aspetta che Turnstile generi il token"""
     print("⏳ Waiting for Turnstile token...")
+    
     for i in range(timeout):
         token = await page.evaluate('''
             () => {
@@ -19,12 +23,16 @@ async def wait_for_turnstile_token(page, timeout=60):
                 return input ? input.value : null;
             }
         ''')
+        
         if token and len(token) > 10:
             print(f"✅ Turnstile token obtained after {i+1} seconds")
             return token
+        
         if i > 0 and i % 10 == 0:
             print(f"   Still waiting... {i}s")
+        
         await asyncio.sleep(1)
+    
     print("⚠️ Turnstile timeout")
     return None
 
@@ -54,6 +62,7 @@ async def get_all_cookies():
             await page.fill('#password', PASSWORD)
             
             token = await wait_for_turnstile_token(page)
+            
             if token:
                 print("🔐 Turnstile resolved, proceeding...")
             
@@ -73,6 +82,8 @@ async def get_all_cookies():
             print("\n" + "=" * 60)
             print("📋 LISTA COMPLETA COOKIE")
             print("=" * 60)
+            
+            login_names = ['sesids', 'user_id', 'has_account', 'no_auto_login', 'se']
             
             for cookie in all_cookies:
                 print(f"\n🍪 {cookie['name']}")
