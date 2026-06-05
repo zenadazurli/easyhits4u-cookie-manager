@@ -5,17 +5,13 @@ from browser_use_sdk.v3 import AsyncBrowserUse
 from playwright.async_api import async_playwright
 from datetime import datetime
 
-# NUOVA API KEY
 API_KEY = os.environ.get("BROWSER_USE_API_KEY", "bu_jGikZymCNda8f1KLkBiFThn_axFR-DIjwzn6ohcoByY")
 
-# Credenziali EasyHits4U
 EMAIL = "sandrominori50+ulugarecexisa@gmail.com"
 PASSWORD = "DDnmVV45!!"
 
 async def wait_for_turnstile_token(page, timeout=60):
-    """Aspetta che Turnstile generi il token"""
     print("⏳ Waiting for Turnstile token...")
-    
     for i in range(timeout):
         token = await page.evaluate('''
             () => {
@@ -23,16 +19,12 @@ async def wait_for_turnstile_token(page, timeout=60):
                 return input ? input.value : null;
             }
         ''')
-        
         if token and len(token) > 10:
             print(f"✅ Turnstile token obtained after {i+1} seconds")
             return token
-        
         if i > 0 and i % 10 == 0:
             print(f"   Still waiting... {i}s")
-        
         await asyncio.sleep(1)
-    
     print("⚠️ Turnstile timeout")
     return None
 
@@ -62,7 +54,6 @@ async def get_all_cookies():
             await page.fill('#password', PASSWORD)
             
             token = await wait_for_turnstile_token(page)
-            
             if token:
                 print("🔐 Turnstile resolved, proceeding...")
             
@@ -78,51 +69,44 @@ async def get_all_cookies():
             print("\n🍪 Fetching ALL cookies...")
             all_cookies = await context.cookies()
             
-            # Organizza i cookie
-            login_cookies = {}
-            navigation_cookies = {}
-            
-            login_names = ['sesids', 'user_id', 'has_account', 'no_auto_login', 'se']
+            # === STAMPA TUTTI I COOKIE NEL LOG ===
+            print("\n" + "=" * 60)
+            print("📋 LISTA COMPLETA COOKIE")
+            print("=" * 60)
             
             for cookie in all_cookies:
-                cookie_info = {
-                    'value': cookie['value'],
-                    'domain': cookie.get('domain', ''),
-                    'path': cookie.get('path', ''),
-                    'secure': cookie.get('secure', False),
-                    'httpOnly': cookie.get('httpOnly', False)
-                }
-                
-                if cookie['name'] in login_names:
-                    login_cookies[cookie['name']] = cookie_info
-                else:
-                    navigation_cookies[cookie['name']] = cookie_info
+                print(f"\n🍪 {cookie['name']}")
+                print(f"   Value: {cookie['value']}")
+                print(f"   Domain: {cookie.get('domain', 'N/A')}")
+                print(f"   Path: {cookie.get('path', 'N/A')}")
+                print(f"   Secure: {cookie.get('secure', False)}")
+                print(f"   HttpOnly: {cookie.get('httpOnly', False)}")
+                if cookie.get('expires'):
+                    print(f"   Expires: {datetime.fromtimestamp(cookie['expires']).isoformat()}")
             
-            divella_cookies = {
-                'sesids': login_cookies.get('sesids', {}).get('value'),
-                'user_id': login_cookies.get('user_id', {}).get('value')
-            }
+            # Cookie specifici per Divella
+            sesids = next((c['value'] for c in all_cookies if c['name'] == 'sesids'), None)
+            user_id = next((c['value'] for c in all_cookies if c['name'] == 'user_id'), None)
+            
+            print("\n" + "=" * 60)
+            print("🎯 COOKIE PER DIVELLA")
+            print("=" * 60)
+            print(f"sesids = {sesids}")
+            print(f"user_id = {user_id}")
+            
+            # Formato per Divella (copia-incolla)
+            print("\n" + "=" * 60)
+            print("📋 FORMATO COPIA-INCOLLA PER DIVELLA")
+            print("=" * 60)
+            print(f"session.cookies.set('sesids', '{sesids}')")
+            print(f"session.cookies.set('user_id', '{user_id}')")
             
             cookies_data = {
                 'timestamp': datetime.now().isoformat(),
                 'url': page.url,
-                'login_cookies': login_cookies,
-                'navigation_cookies': navigation_cookies,
-                'divella_cookies': divella_cookies,
-                'all_cookies': {c['name']: c['value'] for c in all_cookies}
+                'all_cookies': {c['name']: c['value'] for c in all_cookies},
+                'divella_cookies': {'sesids': sesids, 'user_id': user_id}
             }
-            
-            print("\n" + "=" * 60)
-            print("📊 COOKIE OTTENUTI")
-            print("=" * 60)
-            
-            print("\n🔐 Login Cookies:")
-            for name, info in login_cookies.items():
-                print(f"   {name} = {info['value']}")
-            
-            print("\n🤖 Divella Cookies (essenziali):")
-            print(f"   sesids = {divella_cookies['sesids']}")
-            print(f"   user_id = {divella_cookies['user_id']}")
             
             print(f"\n📍 Final URL: {page.url}")
             
@@ -146,8 +130,6 @@ async def main():
     print("\n" + "=" * 60)
     if cookies.get('divella_cookies', {}).get('sesids'):
         print("🎉🎉🎉 SUCCESSO! 🎉🎉🎉")
-        print(f"   sesids = {cookies['divella_cookies']['sesids']}")
-        print(f"   user_id = {cookies['divella_cookies']['user_id']}")
     else:
         print("❌ Cookie non ottenuti")
     print("=" * 60)
